@@ -24,6 +24,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # reminder: ensure your environment variables from .env are
+      # configured as GitHub Secrets (VITE_APPWRITE_*, etc.) before
+      # running the build. The workflow reads them below.
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -34,6 +37,15 @@ jobs:
         run: npm install
 
       - name: Build project
+        env:
+          VITE_APPWRITE_ENDPOINT: ${{ secrets.VITE_APPWRITE_ENDPOINT }}
+          VITE_APPWRITE_PROJECT_ID: ${{ secrets.VITE_APPWRITE_PROJECT_ID }}
+          VITE_APPWRITE_BUCKET_ID: ${{ secrets.VITE_APPWRITE_BUCKET_ID }}
+          VITE_APPWRITE_DATABASE_ID: ${{ secrets.VITE_APPWRITE_DATABASE_ID }}
+          VITE_APPWRITE_CONTACTS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_CONTACTS_COLLECTION_ID }}
+          VITE_APPWRITE_PROJECTS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_PROJECTS_COLLECTION_ID }}
+          VITE_APPWRITE_BLOGS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_BLOGS_COLLECTION_ID }}
+          VITE_APPWRITE_CATEGORIES_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_CATEGORIES_COLLECTION_ID }}
         run: |
           npm run build -- --base=/${{ github.event.repository.name }}/
           cp dist/index.html dist/404.html
