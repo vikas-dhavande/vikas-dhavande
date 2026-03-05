@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useBlogs, BlogItem } from '../hooks/useBlogs';
-import { ArrowLeft, Calendar, Clock, Tag, Loader2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { ArrowLeft, Calendar, Clock, Tag, Loader2, Heart, MessageSquare, Pencil } from 'lucide-react';
 import { motion } from 'motion/react';
 import { generateHTML } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -11,9 +12,11 @@ import LinkExtension from '@tiptap/extension-link';
 export function BlogDetail() {
     const { slug } = useParams<{ slug: string }>();
     const { getBlogBySlug } = useBlogs();
+    const { isLoggedIn, isAdmin } = useAuth();
     const [blog, setBlog] = useState<BlogItem | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [liked, setLiked] = useState(false);
 
     useEffect(() => {
         const fetchBlog = async () => {
@@ -148,6 +151,69 @@ export function BlogDetail() {
                             prose-pre:bg-gray-100 dark:prose-pre:bg-gray-900 prose-pre:text-gray-900 dark:prose-pre:text-gray-100 prose-pre:border prose-pre:border-gray-200 dark:prose-pre:border-gray-800"
                         dangerouslySetInnerHTML={{ __html: getHtmlContent(blog.content_json) }}
                     />
+
+                    {/* ── Post Footer: Like & Comment ─────────────────────── */}
+                    <div className="mt-16 pt-10 border-t border-gray-100 dark:border-gray-900">
+                        {isLoggedIn ? (
+                            <div className="space-y-8">
+                                {/* Like button */}
+                                <div className="flex items-center gap-4">
+                                    <button
+                                        onClick={() => setLiked(l => !l)}
+                                        className={`flex items-center gap-2 px-5 py-2.5 rounded-full border-2 font-medium text-sm transition-all duration-200 ${liked
+                                                ? 'bg-rose-500 border-rose-500 text-white shadow-md shadow-rose-200 dark:shadow-rose-900/30'
+                                                : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-rose-400 hover:text-rose-500'
+                                            }`}
+                                        aria-label={liked ? 'Unlike this post' : 'Like this post'}
+                                    >
+                                        <Heart className={`w-4 h-4 transition-transform ${liked ? 'scale-110 fill-current' : ''}`} />
+                                        {liked ? 'Liked' : 'Like this post'}
+                                    </button>
+                                    <span className="text-sm text-gray-400 dark:text-gray-600">
+                                        Be the first to like this
+                                    </span>
+                                </div>
+
+                                {/* Comment section */}
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
+                                        <MessageSquare className="w-5 h-5" />
+                                        Comments
+                                    </h3>
+                                    <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-4 bg-gray-50 dark:bg-gray-900/50 text-center text-sm text-gray-500 dark:text-gray-400">
+                                        No comments yet. Be the first to share your thoughts!
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            /* CTA for non-logged-in visitors */
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 px-6 py-5">
+                                <div>
+                                    <p className="font-semibold text-gray-900 dark:text-white text-sm">Enjoying this post?</p>
+                                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">Log in to like and leave a comment.</p>
+                                </div>
+                                <Link
+                                    to="/login"
+                                    className="shrink-0 inline-flex items-center px-5 py-2 rounded-full text-sm font-semibold border-2 border-black dark:border-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                                >
+                                    Log in
+                                </Link>
+                            </div>
+                        )}
+
+                        {/* Admin shortcut: edit this post */}
+                        {isAdmin && blog && (
+                            <div className="mt-6 flex justify-end">
+                                <Link
+                                    to={`/admin/blogs/${blog.$id}`}
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium border border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-cyan-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
+                                >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                    Edit post (Admin)
+                                </Link>
+                            </div>
+                        )}
+                    </div>
                 </motion.div>
             </div>
         </article>

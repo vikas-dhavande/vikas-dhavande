@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
 import { AdminLayout } from './components/layout/AdminLayout';
+import { AdminRoute } from './components/AdminRoute';
 import { ThemeProvider } from './components/ThemeProvider';
 import { AuthProvider } from './context/AuthContext';
 import { Loader2 } from 'lucide-react';
@@ -23,6 +24,7 @@ const ManageBlogs = lazy(() => import('./pages/admin/blogs/ManageBlogs').then(m 
 const EditBlog = lazy(() => import('./pages/admin/blogs/EditBlog').then(m => ({ default: m.EditBlog })));
 const ManageProjects = lazy(() => import('./pages/admin/projects/ManageProjects').then(m => ({ default: m.ManageProjects })));
 const EditProject = lazy(() => import('./pages/admin/projects/EditProject').then(m => ({ default: m.EditProject })));
+const AdminSettings = lazy(() => import('./pages/admin/AdminSettings').then(m => ({ default: m.AdminSettings })));
 
 // ─── Global page-level loading fallback ──────────────────────────────────────
 function PageLoader() {
@@ -53,13 +55,16 @@ export default function App() {
                 <Route path="login" element={<Login />} />
               </Route>
 
-              {/* Protected Admin Routes */}
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<Dashboard />} />
-                <Route path="blogs" element={<ManageBlogs />} />
-                <Route path="blogs/:id" element={<EditBlog />} />
-                <Route path="projects" element={<ManageProjects />} />
-                <Route path="projects/:id" element={<EditProject />} />
+              {/* Protected Admin Routes — requires 'admin' label */}
+              <Route path="/admin" element={<AdminRoute />}>
+                <Route element={<AdminLayout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="blogs" element={<ManageBlogs />} />
+                  <Route path="blogs/:id" element={<EditBlog />} />
+                  <Route path="projects" element={<ManageProjects />} />
+                  <Route path="projects/:id" element={<EditProject />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                </Route>
               </Route>
             </Routes>
           </Suspense>

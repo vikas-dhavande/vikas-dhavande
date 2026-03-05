@@ -8,6 +8,8 @@ type User = Models.User<Models.Preferences>;
 interface AuthContextValue {
     user: User | null;
     loading: boolean;
+    isLoggedIn: boolean;
+    isAdmin: boolean;
     login: (email: string, password: string) => Promise<void>;
     register: (name: string, email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
@@ -46,8 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
     };
 
+    // Derived role helpers
+    const isLoggedIn = !!user;
+    const isAdmin = user?.labels?.includes('admin') ?? false;
+
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+        <AuthContext.Provider value={{ user, loading, isLoggedIn, isAdmin, login, register, logout }}>
             {children}
         </AuthContext.Provider>
     );

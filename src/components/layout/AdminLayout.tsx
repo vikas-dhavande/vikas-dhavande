@@ -13,16 +13,19 @@ const adminLinks = [
 ];
 
 export function AdminLayout() {
-    const { user, loading, logout } = useAuth();
+    const { user, loading, logout, isAdmin } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const { isSidebarOpen, toggleSidebar, setSidebarOpen } = useAppStore();
 
+    // Redirect if not logged in or not an admin
     useEffect(() => {
         if (!loading && !user) {
             navigate('/login', { state: { from: location }, replace: true });
+        } else if (!loading && user && !isAdmin) {
+            navigate('/', { replace: true });
         }
-    }, [user, loading, navigate, location]);
+    }, [user, loading, isAdmin, navigate, location]);
 
     // Close sidebar on route change in mobile
     useEffect(() => {

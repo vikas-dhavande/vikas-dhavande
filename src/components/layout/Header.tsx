@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, MoreHorizontal, ChevronDown, Home as HomeIcon, Moon, Sun, Github, Linkedin, Twitter, Youtube, LogOut, ChevronDown as DropIcon, X, FileText, Cpu } from 'lucide-react';
+import { Search, MoreHorizontal, ChevronDown, Home as HomeIcon, Moon, Sun, Github, Linkedin, Twitter, Youtube, LogOut, ChevronDown as DropIcon, X, FileText, Cpu, LayoutDashboard } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useTheme } from '../ThemeProvider';
 import { useAuth } from '../../context/AuthContext';
@@ -193,7 +193,7 @@ export function Header() {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const location = useLocation();
   const { theme, setTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setIsMobileMenuOpen(false); }, [location.pathname, location.hash]);
@@ -350,7 +350,22 @@ export function Header() {
                     <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                       <p className="text-sm font-semibold text-black dark:text-white truncate">{user.name}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{user.email}</p>
+                      {isAdmin && (
+                        <span className="inline-flex items-center mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-400 tracking-wide uppercase">
+                          Admin
+                        </span>
+                      )}
                     </div>
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setIsUserDropdownOpen(false)}
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-100 dark:border-gray-800"
+                      >
+                        <LayoutDashboard className="w-4 h-4" />
+                        Admin Dashboard
+                      </Link>
+                    )}
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
@@ -388,6 +403,16 @@ export function Header() {
                 {link.name}
               </Link>
             ))}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-2 py-3 px-2 text-base font-medium text-gray-600 dark:text-gray-400 border-b border-gray-100 dark:border-gray-900 hover:text-black dark:hover:text-white transition-colors"
+              >
+                <LayoutDashboard className="w-5 h-5" />
+                Admin Dashboard
+              </Link>
+            )}
             <div className="flex items-center justify-between py-4 mt-2 border-t border-gray-200 dark:border-gray-800">
               {user ? (
                 <div className="flex items-center gap-3">
@@ -395,6 +420,11 @@ export function Header() {
                   <div>
                     <p className="text-sm font-semibold text-black dark:text-white">{user.name}</p>
                     <p className="text-xs text-gray-500">{user.email}</p>
+                    {isAdmin && (
+                      <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-400 tracking-wide uppercase">
+                        Admin
+                      </span>
+                    )}
                   </div>
                 </div>
               ) : (
