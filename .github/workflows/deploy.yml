@@ -46,6 +46,8 @@ jobs:
           VITE_APPWRITE_PROJECTS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_PROJECTS_COLLECTION_ID }}
           VITE_APPWRITE_BLOGS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_BLOGS_COLLECTION_ID }}
           VITE_APPWRITE_CATEGORIES_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_CATEGORIES_COLLECTION_ID }}
+          VITE_APPWRITE_LIKES_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_LIKES_COLLECTION_ID }}
+          VITE_APPWRITE_COMMENTS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_COMMENTS_COLLECTION_ID }}
         run: |
           npm run build -- --base=/${{ github.event.repository.name }}/
           cp dist/index.html dist/404.html
