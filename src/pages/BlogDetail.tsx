@@ -8,23 +8,67 @@ import { generateHTML } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import LinkExtension from '@tiptap/extension-link';
+import { databases, DB_ID, LIKES_COLLECTION_ID, COMMENTS_COLLECTION_ID, Query, ID } from '../lib/appwrite';
 
 export function BlogDetail() {
     const { slug } = useParams<{ slug: string }>();
     const { getBlogBySlug } = useBlogs();
-    const { isLoggedIn, isAdmin } = useAuth();
+    const { isLoggedIn, isAdmin, user } = useAuth();
     const [blog, setBlog] = useState<BlogItem | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [liked, setLiked] = useState(false);
+
+    // Interaction state
+    const [likesCount, setLikesCount] = useState(0);
+    const [hasLiked, setHasLiked] = useState(false);
+    const [likeId, setLikeId] = useState<string | null>(null);
+    const [comments, setComments] = useState<any[]>([]);
+    const [commentText, setCommentText] = useState('');
+    const [isSubmittingLike, setIsSubmittingLike] = useState(false);
+    const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
     useEffect(() => {
+        const fetchInteractions = async (blogId: string) => {
+            if (!DB_ID || !LIKES_COLLECTION_ID || !COMMENTS_COLLECTION_ID) return;
+
+            try {
+                // Fetch likes count
+                const likesResponse = await databases.listDocuments(DB_ID, LIKES_COLLECTION_ID, [
+                    Query.equal('blogId', blogId),
+                    Query.limit(1)
+                ]);
+                setLikesCount(likesResponse.total);
+
+                // Check if current user has liked
+                if (user?.$id) {
+                    const myLike = await databases.listDocuments(DB_ID, LIKES_COLLECTION_ID, [
+                        Query.equal('blogId', blogId),
+                        Query.equal('userId', user.$id)
+                    ]);
+                    if (myLike.total > 0) {
+                        setHasLiked(true);
+                        setLikeId(myLike.documents[0].$id);
+                    }
+                }
+
+                // Fetch comments
+                const commentsResponse = await databases.listDocuments(DB_ID, COMMENTS_COLLECTION_ID, [
+                    Query.equal('blogId', blogId),
+                    Query.orderDesc('$createdAt')
+                ]);
+                setComments(commentsResponse.documents);
+            } catch (err) {
+                console.error("Error fetching interactions:", err);
+            }
+        };
+
         const fetchBlog = async () => {
             try {
                 if (!slug) return;
                 const data = await getBlogBySlug(slug);
                 if (data) {
                     setBlog(data);
+                    fetchInteractions(data.$id);
                 } else {
                     setError('Blog not found');
                 }
@@ -36,7 +80,66 @@ export function BlogDetail() {
         };
 
         fetchBlog();
-    }, [slug, getBlogBySlug]);
+    }, [slug, getBlogBySlug, user?.$id]);
+
+    const handleLike = async () => {
+        if (!user || !blog || isSubmittingLike || !LIKES_COLLECTION_ID) return;
+        setIsSubmittingLike(true);
+
+        try {
+            if (hasLiked && likeId) {
+                // Unlike
+                await databases.deleteDocument(DB_ID, LIKES_COLLECTION_ID, likeId);
+                setHasLiked(false);
+                setLikeId(null);
+                setLikesCount(prev => Math.max(0, prev - 1));
+            } else {
+                // Like
+                const response = await databases.createDocument(
+                    DB_ID,
+                    LIKES_COLLECTION_ID,
+                    ID.unique(),
+                    {
+                        blogId: blog.$id,
+                        userId: user.$id
+                    }
+                );
+                setHasLiked(true);
+                setLikeId(response.$id);
+                setLikesCount(prev => prev + 1);
+            }
+        } catch (err) {
+            console.error("Like action failed:", err);
+        } finally {
+            setIsSubmittingLike(false);
+        }
+    };
+
+    const handleComment = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!user || !blog || !commentText.trim() || isSubmittingComment || !COMMENTS_COLLECTION_ID) return;
+        setIsSubmittingComment(true);
+
+        try {
+            const response = await databases.createDocument(
+                DB_ID,
+                COMMENTS_COLLECTION_ID,
+                ID.unique(),
+                {
+                    blogId: blog.$id,
+                    userId: user.$id,
+                    userName: user.name,
+                    content: commentText.trim()
+                }
+            );
+            setComments(prev => [response, ...prev]);
+            setCommentText('');
+        } catch (err) {
+            console.error("Comment submission failed:", err);
+        } finally {
+            setIsSubmittingComment(false);
+        }
+    };
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('en-US', {
@@ -159,18 +262,25 @@ export function BlogDetail() {
                                 {/* Like button */}
                                 <div className="flex items-center gap-4">
                                     <button
-                                        onClick={() => setLiked(l => !l)}
-                                        className={`flex items-center gap-2 px-5 py-2.5 rounded-full border-2 font-medium text-sm transition-all duration-200 ${liked
-                                                ? 'bg-rose-500 border-rose-500 text-white shadow-md shadow-rose-200 dark:shadow-rose-900/30'
-                                                : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-rose-400 hover:text-rose-500'
-                                            }`}
-                                        aria-label={liked ? 'Unlike this post' : 'Like this post'}
+                                        onClick={handleLike}
+                                        disabled={isSubmittingLike}
+                                        className={`flex items-center gap-2 px-5 py-2.5 rounded-full border-2 font-medium text-sm transition-all duration-200 ${hasLiked
+                                            ? 'bg-rose-500 border-rose-500 text-white shadow-md shadow-rose-200 dark:shadow-rose-900/30'
+                                            : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-rose-400 hover:text-rose-500'
+                                            } ${isSubmittingLike ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        aria-label={hasLiked ? 'Unlike this post' : 'Like this post'}
                                     >
-                                        <Heart className={`w-4 h-4 transition-transform ${liked ? 'scale-110 fill-current' : ''}`} />
-                                        {liked ? 'Liked' : 'Like this post'}
+                                        {isSubmittingLike ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Heart className={`w-4 h-4 transition-transform ${hasLiked ? 'scale-110 fill-current' : ''}`} />
+                                        )}
+                                        {hasLiked ? 'Liked' : 'Like this post'}
                                     </button>
-                                    <span className="text-sm text-gray-400 dark:text-gray-600">
-                                        Be the first to like this
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                                        {likesCount === 0
+                                            ? 'Be the first to like this'
+                                            : `${likesCount} ${likesCount === 1 ? 'person' : 'people'} liked this`}
                                     </span>
                                 </div>
 
@@ -178,10 +288,59 @@ export function BlogDetail() {
                                 <div>
                                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-5 flex items-center gap-2">
                                         <MessageSquare className="w-5 h-5" />
-                                        Comments
+                                        Comments ({comments.length})
                                     </h3>
-                                    <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-4 bg-gray-50 dark:bg-gray-900/50 text-center text-sm text-gray-500 dark:text-gray-400">
-                                        No comments yet. Be the first to share your thoughts!
+
+                                    {/* New Comment input */}
+                                    <form onSubmit={handleComment} className="mb-8 group">
+                                        <div className="relative">
+                                            <textarea
+                                                value={commentText}
+                                                onChange={(e) => setCommentText(e.target.value)}
+                                                placeholder="Write a comment..."
+                                                className="w-full rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-5 py-4 text-sm focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent outline-none transition-all placeholder:text-gray-400 resize-none min-h-[120px]"
+                                                rows={3}
+                                            />
+                                            <div className="absolute bottom-3 right-3">
+                                                <button
+                                                    type="submit"
+                                                    disabled={!commentText.trim() || isSubmittingComment}
+                                                    className="px-4 py-2 rounded-xl bg-black dark:bg-white text-white dark:text-black text-xs font-bold hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 transition-all"
+                                                >
+                                                    {isSubmittingComment ? 'Posting...' : 'Post Comment'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+
+                                    {/* Comments list */}
+                                    <div className="space-y-6">
+                                        {comments.length === 0 ? (
+                                            <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-8 bg-gray-50 dark:bg-gray-900/50 text-center text-sm text-gray-500 dark:text-gray-400 italic">
+                                                No comments yet. Be the first to share your thoughts!
+                                            </div>
+                                        ) : (
+                                            comments.map((comment) => (
+                                                <div key={comment.$id} className="flex gap-4 group">
+                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center font-bold text-gray-400 text-xs shrink-0 border border-gray-200 dark:border-gray-800">
+                                                        {comment.userName?.charAt(0).toUpperCase() || '?'}
+                                                    </div>
+                                                    <div className="flex-1 space-y-1.5 min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                                                                {comment.userName}
+                                                            </span>
+                                                            <span className="text-[10px] text-gray-400 px-1.5 py-0.5 rounded-md bg-gray-50 dark:bg-gray-800/50">
+                                                                {new Date(comment.$createdAt).toLocaleDateString()}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed break-words">
+                                                            {comment.content}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
                                     </div>
                                 </div>
                             </div>

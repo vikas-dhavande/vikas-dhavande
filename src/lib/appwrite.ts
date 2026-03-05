@@ -18,6 +18,8 @@ export const DB_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID || '';
 export const CONTACTS_COLLECTION_ID = import.meta.env.VITE_APPWRITE_CONTACTS_COLLECTION_ID || '';
 export const PROJECTS_COLLECTION_ID = import.meta.env.VITE_APPWRITE_PROJECTS_COLLECTION_ID || '';
 export const BLOGS_COLLECTION_ID = import.meta.env.VITE_APPWRITE_BLOGS_COLLECTION_ID || '';
+export const LIKES_COLLECTION_ID = import.meta.env.VITE_APPWRITE_LIKES_COLLECTION_ID || '';
+export const COMMENTS_COLLECTION_ID = import.meta.env.VITE_APPWRITE_COMMENTS_COLLECTION_ID || '';
 export const STORAGE_BUCKET_ID = import.meta.env.VITE_APPWRITE_BUCKET_ID || '';
 
 // ---------------------------------------------------------------------------
