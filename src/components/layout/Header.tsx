@@ -86,7 +86,7 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
           className="flex-1 bg-transparent text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none text-sm"
         />
         {query && (
-          <button onClick={() => setQuery('')} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+          <button aria-label="Clear search" onClick={() => setQuery('')} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
             <X className="w-4 h-4" />
           </button>
         )}
@@ -326,6 +326,7 @@ export function Header() {
               {isSearchOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
             </button>
             <button
+              aria-label="Toggle menu"
               className="md:hidden p-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >

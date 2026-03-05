@@ -12,6 +12,8 @@ export interface BlogItem extends Models.Document {
     read_time: number;
     featured_image: string | null;
     created_at: string;
+    location?: string;
+    allow_comments?: boolean;
 }
 
 export function useBlogs() {
